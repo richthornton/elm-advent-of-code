@@ -7,16 +7,18 @@ import Advent
           -- , unsafeMaybe
         )
 
+import Set exposing (Set)
+
 
 -- 1. TYPES (what is the best representation of the problem?)
 
 
 type alias Input1 =
-    Int
+    List Int
 
 
 type alias Input2 =
-    Int
+    List Int
 
 
 type alias Output1 =
@@ -33,8 +35,13 @@ type alias Output2 =
 
 parse1 : String -> Input1
 parse1 string =
-    -1
+    string
+        |> String.lines
+        |> List.map unsafeFromStringToInt
 
+unsafeFromStringToInt : String -> Int
+unsafeFromStringToInt string = 
+    Maybe.withDefault 0 (String.toInt string)
 
 parse2 : String -> Input2
 parse2 string =
@@ -47,13 +54,47 @@ parse2 string =
 
 compute1 : Input1 -> Output1
 compute1 input =
-    -1
+    List.sum input
 
 
 compute2 : Input2 -> Output2
 compute2 input =
-    -1
+    let
+        process : Int -> ( Int, Set Int, Maybe Int ) -> ( Int, Set Int, Maybe Int )
+        process line ( current, seen, done ) =
+            case done of
+                Nothing ->
+                    let
+                        new : Int
+                        new =
+                            current + line
+                    in
+                    if Set.member new seen then
+                        ( 0, seen, Just new )
 
+                    else
+                        ( new, Set.insert new seen, Nothing )
+
+                Just _ ->
+                    ( current, seen, done )
+
+        processManyTimes : ( Int, Set Int, Maybe Int ) -> Int
+        processManyTimes ( current, seen, done ) =
+            case done of
+                Nothing ->
+                    let
+                        processed : ( Int, Set Int, Maybe Int )
+                        processed =
+                            input
+                                |> List.foldl process ( current, seen, done )
+                    in
+                    processManyTimes processed
+
+                Just result ->
+                    result
+    in
+    processManyTimes ( 0, Set.singleton 0, Nothing )
+    
 
 
 -- 4. TESTS (uh-oh, is this problem a hard one?)
@@ -61,17 +102,48 @@ compute2 input =
 
 tests1 : List (Test Input1 Output1)
 tests1 =
-    [{- Test "example"
-        "input"
-        -1
-        -1
-     -}
+    [Test "Test 1"
+        "+1\n-2\n+3\n+1"
+        [1, -2, 3, 1]
+        3
+    , Test "Test 2"
+        "+1\n+1\n+1"
+        [1, 1, 1]
+        3
+    , Test "Test 3"
+        "+1\n+1\n-2"
+        [1, 1, -2]
+        0
+    , Test "Test 4"
+        "-1\n-2\n-3"
+        [-1, -2, -3]
+        -6
     ]
 
 
 tests2 : List (Test Input2 Output2)
 tests2 =
-    []
+    [Test "Test 1"
+        "+1\n-2\n+3\n+1"
+        [1, -2, 3, 1]
+        2
+    , Test "Test 2"
+        "+1\n-1"
+        [1, -1]
+        0
+    , Test "Test 3"
+        "+3\n+3\n+4\n-2\n-4"
+        [3, 3, 4, -2, -4]
+        10
+    , Test "Test 4"
+        "-6\n+3\n+8\n+5\n-6"
+        [-6, 3, 8, 5, -6]
+        5
+    , Test "Test 5"
+        "+7\n+7\n-2\n-7\n-4"
+        [7, 7, -2, -7, -4]
+        14
+    ]
 
 
 
