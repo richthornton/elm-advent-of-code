@@ -55,21 +55,38 @@ removeMatching : String -> List Char
 removeMatching string = 
     let
         originalChars = String.toList string
-        processManyTimes : List Char -> List Char -> List Char
-        processManyTimes previousList currentList =
+        processManyTimes : Int -> List Char -> List Char
+        processManyTimes previousListLength currentList =
             let
-                isSameList = isSameChars previousList currentList
+                isSameList = isSameChars previousListLength currentList
+                currentListLength = List.length currentList
             in
                 if isSameList then
                     currentList
                 else
-                    processManyTimes currentList (removeSames currentList)
+                    processManyTimes currentListLength (removeSamesFold currentList)
     in
-        processManyTimes originalChars originalChars
+        processManyTimes 1 originalChars
 
-isSameChars : List Char -> List Char -> Bool
-isSameChars list1 list2 =
-    String.fromList list1 == String.fromList list2
+isSameChars : Int -> List Char -> Bool
+isSameChars list1Length list2 =
+    list1Length == List.length list2
+
+removeSamesFold : List Char -> List Char
+removeSamesFold items = 
+    items
+        |> List.foldr texasFoldem []
+
+texasFoldem : Char -> List Char -> List Char
+texasFoldem char listChar = 
+    case listChar of
+        a :: rest ->
+            if isOpposite a char then
+                rest
+            else
+                char :: a :: rest
+        other ->
+            char :: other
 
 removeSames : List Char -> List Char
 removeSames items =
@@ -91,9 +108,30 @@ isOpposite char1 char2 =
 
 compute2 : Input2 -> Output2
 compute2 input =
-    -1
+    input
+        |> getArrayOfNumbersForLetter
+        |> List.minimum
+        |> Maybe.withDefault 1000000000
 
+getArrayOfNumbersForLetter : String -> List Int
+getArrayOfNumbersForLetter string =
+    let
+        allLetters = "abcdefghijklmnopqrstuvwxyz"
+        allLettersList = allLetters
+            |> String.toList
+            |> List.map String.fromChar
+        possibleStrings =
+            allLettersList
+                |> List.map (replaceLetterWithEmpty string)
+    in
+        possibleStrings
+            |> List.map compute1
 
+replaceLetterWithEmpty : String -> String -> String
+replaceLetterWithEmpty originalString letter = 
+    originalString
+        |> String.replace letter "" 
+        |> String.replace (String.toUpper letter) ""
 
 -- 4. TESTS (uh-oh, is this problem a hard one?)
 
@@ -109,7 +147,11 @@ tests1 =
 
 tests2 : List (Test Input2 Output2)
 tests2 =
-    []
+    [Test "example 2"
+        "dabAcCaCBAcCcaDA"
+        "dabAcCaCBAcCcaDA"
+        4
+    ]
 
 
 
