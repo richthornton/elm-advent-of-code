@@ -12,11 +12,20 @@ import Advent
 
 
 type alias Input1 =
-    Int
+    Node
 
+type alias Node =
+    {
+        childrenLength: Int,
+        metadataLength: Int,
+        children: Children,
+        metadata: List Int
+    }
+
+type Children = Children (List Node)
 
 type alias Input2 =
-    Int
+    Node
 
 
 type alias Output1 =
@@ -33,8 +42,45 @@ type alias Output2 =
 
 parse1 : String -> Input1
 parse1 string =
-    -1
+    string
+        |> String.split ""
+        |> List.map Advent.unsafeToInt
 
+convertToNode : List Int -> Node
+convertToNode numbers =
+    case numbers of
+        childrenLength :: metadataLength :: rest ->
+            if childrenLength == 0 then
+                {
+                    childrenLength = childrenLength,
+                    metadataLength = metadataLength,
+                    children = Children([]),
+                    metadata = rest
+                }
+            else
+                let
+                    childrenAndMetadata = getChildrenAndMetadata childrenLength metadataLength rest
+                in
+                    {
+                        childrenLength = childrenLength,
+                        metadataLength = metadataLength,
+                        children = Children(convertToNode (Tuple.first childrenAndMetadata)),
+                        metadata = Tuple.second childrenAndMetadata
+                    }
+
+getChildrenAndMetadata : Int -> Int -> List Int -> (List Int, List Int)
+getChildrenAndMetadata childrenLength metadataLength numbers =
+    let
+        reversedNumbers = numbers
+            |> List.reverse
+        metadata = reversedNumbers
+            |> List.take metadataLength
+            |> List.reverse
+        childrenInts = reversedNumbers
+            |> List.drop metadataLength
+            |> List.reverse
+    in
+        (childrenInts, metadata)
 
 parse2 : String -> Input2
 parse2 string =
@@ -54,18 +100,37 @@ compute2 : Input2 -> Output2
 compute2 input =
     -1
 
-
-
--- 4. TESTS (uh-oh, is this problem a hard one?)
-
-
 tests1 : List (Test Input1 Output1)
 tests1 =
-    [{- Test "example"
-        "input"
+    [Test "example"
+        "2 3 0 3 10 11 12 1 1 0 1 99 2 1 1 2"
+        {
+            childrenLength = 2,
+            metadataLength = 3,
+            children = Children[
+                {
+                    childrenLength = 0,
+                    metadataLength = 3,
+                    children = Children[],
+                    metadata = [10, 11, 12]
+                },
+                {
+                    childrenLength = 1,
+                    metadataLength = 1,
+                    children = Children[
+                        {
+                            childrenLength = 0,
+                            metadataLength = 1,
+                            children = Children[],
+                            metadata = [99]
+                        }
+                    ],
+                    metadata = [2]
+                }
+            ],
+            metadata = [1, 1, 2]
+        }
         -1
-        -1
-     -}
     ]
 
 
