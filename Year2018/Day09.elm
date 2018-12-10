@@ -86,6 +86,10 @@ parse2 string =
 
 -- 3. COMPUTE (actually solve the problem)
 
+debugIt : a -> a
+debugIt a =
+    Debug.log (Debug.toString a)
+    a
 
 compute1 : Input1 -> Output1
 compute1 input =
@@ -106,7 +110,8 @@ getHighestScore board =
 doMoves : Board -> Board
 doMoves board =
     let
-        newBoard = doNextMove board
+        newBoard = board
+            |> doNextMove
     in
         case newBoard.gameHasFinished of
             True -> newBoard
@@ -207,15 +212,15 @@ getNextMove players playerId =
 doNormalMove : MovesPlayed -> Int -> MovesPlayed
 doNormalMove movesPlayed move =
     case movesPlayed of
-        first :: rest -> move :: rest ++ [first]
+        first :: second :: rest -> move :: rest ++ [first] ++ [second]
         first -> move :: first
 
 doSpecialMove : MovesPlayed -> (MovesPlayed, Int)
 doSpecialMove movesPlayed =
     let
         reversedList = List.reverse movesPlayed
-        firstPartOfList = List.take 7 reversedList
-        secondPartOfList = List.drop 7 reversedList
+        firstPartOfList = List.take 6 reversedList
+        secondPartOfList = List.drop 6 reversedList
         (score, restOfList) =
             case secondPartOfList of
                 s :: rest -> (s, rest)
@@ -245,22 +250,26 @@ createPlayers gameEndState =
         allPlayersInitialised = allPlayerNumbers
             |> List.map initialisePlayer
             |> Dict.fromList
-        playersWithMoves = addMovesToPlayers allMoves allPlayersInitialised
+        headOfList = Maybe.withDefault 1 (List.head allMoves)
+        playersWithMoves = addMovesToPlayers headOfList (List.drop 1 allMoves) allPlayersInitialised
     in
         playersWithMoves
 
-addMovesToPlayers : List Int -> Players -> Players
-addMovesToPlayers moves players =
+addMovesToPlayers : Int -> List Int -> Players -> Players
+addMovesToPlayers move remainingMoves players =
     let
-        playersWithMoves = List.foldl (addMoveToPlayers) players moves
+        playersWithMoves = addMoveToPlayers move players
     in
-        playersWithMoves
+        case remainingMoves of
+            first :: rest -> addMovesToPlayers first rest playersWithMoves
+            [] -> playersWithMoves
     
     
 addMoveToPlayers : Int -> Players -> Players
 addMoveToPlayers move players =
     let
-        playerToUpdate = findPlayerToUpdate players
+        playerToUpdate = players
+            |> findPlayerToUpdate 
     in
         Dict.update
             (Tuple.first playerToUpdate)
@@ -281,22 +290,26 @@ addMoveToPlayers move players =
 
 findPlayerToUpdate : Players -> (Int, Player)
 findPlayerToUpdate players =
-    players
-        |> Dict.foldl (returnLowestPlayerId) (initialisePlayer 1)
+    let
+        initialPlayer = Dict.get 1 players
+        safeInitialPlayer = Maybe.withDefault (Tuple.second (initialisePlayer 1)) initialPlayer
+    in
+        players
+            |> Dict.foldr (returnLowestPlayerId) (1, safeInitialPlayer)
 
 returnLowestPlayerId : Int -> Player -> (Int, Player) -> (Int, Player)
-returnLowestPlayerId comparingPlayerId comparingPlayer lowestPlayer =
+returnLowestPlayerId lowestPayerId lowestPayer comparingPlaya =
     let
-        lowestPlayerMoves = lowestPlayer
+        comparingPlayaMoves = comparingPlaya
             |> Tuple.second
             |> .movesToPlay
-        comparingPlayerMoves = comparingPlayer
+        lowestPayerMoves = lowestPayer
             |> .movesToPlay
     in
-        if List.length comparingPlayerMoves < List.length lowestPlayerMoves then
-            (comparingPlayerId, comparingPlayer)
+        if List.length comparingPlayaMoves < List.length lowestPayerMoves then
+            comparingPlaya
         else
-            lowestPlayer
+            (lowestPayerId, lowestPayer)
 
 initialisePlayer : Int -> (Int, Player)
 initialisePlayer id =
@@ -309,8 +322,10 @@ initialisePlayer id =
 
 compute2 : Input2 -> Output2
 compute2 input =
-    -1
-
+    compute1 {
+        numberOfPlayers = input.numberOfPlayers,
+        lastMarbleScore = input.lastMarbleScore * 100
+    }
 
 
 -- 4. TESTS (uh-oh, is this problem a hard one?)
@@ -352,7 +367,14 @@ tests1 =
             numberOfPlayers = 30,
             lastMarbleScore = 5807
         }
-        37305
+        37305,
+    Test "Test example"
+        "9,25"
+        {
+            numberOfPlayers = 9,
+            lastMarbleScore = 25
+        }
+        32
     ]
 
 
