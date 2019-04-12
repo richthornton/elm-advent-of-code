@@ -8,6 +8,7 @@ import Advent
         )
 
 import Dict exposing (Dict)
+import Array exposing (Array)
 
 -- 1. TYPES (what is the best representation of the problem?)
 
@@ -31,7 +32,7 @@ type alias Board =
 
 type alias BoardDirection = String
 
-type alias MovesPlayed = List Int
+type alias MovesPlayed = Array Int
 
 type alias Players = Dict Int Player
 
@@ -236,7 +237,7 @@ initialiseGame gameEndState =
         players = createPlayers gameEndState
     in
         {
-            movesPlayed = [0],
+            movesPlayed = Array.repeat 1 1,
             currentPlayer = 1,
             players = players,
             gameHasFinished = False
